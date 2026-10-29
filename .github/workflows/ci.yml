@@ -1,0 +1,62 @@
+name: CI - Code Quality & Tests
+
+'on':
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint & Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+
+    env:
+      # Dummy keys prevent LangChain & Tavily client initialization errors in CI
+      GEMINI_API_KEY: dummy_ci_gemini_key
+      GOOGLE_API_KEY: dummy_ci_google_key
+      TAVILY_API_KEY: dummy_ci_tavily_key
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-mock ruff pyright
+
+      - name: Run Ruff Linter
+        run: |
+          ruff check . --output-format=github
+
+      - name: Run Pyright Type Checker
+        run: |
+          pyright --pythonpath $(which python) app.py pipeline.py agents.py tools.py
+
+      - name: Run Unit Tests
+        run: |
+          pytest -v
+
+      - name: Code Compilation & App Smoke Test
+        run: |
+          python -m py_compile app.py pipeline.py agents.py tools.py
+          python -c "import warnings; warnings.filterwarnings('ignore'); import app; print('App module successfully verified!')"

@@ -3,3 +3,8 @@
 __pycache__/
 *.pyc
 copy_assets.py
+.idea/
+.pytest_cache/
+.ruff_cache/
+
+

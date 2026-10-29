@@ -1,5 +1,8 @@
 {
-  "python.defaultInterpreterPath": "d:/Projects/Multi-agent_AI_research/.venv/Scripts/python.exe",
-  "python.interpreterPath": "d:/Projects/Multi-agent_AI_research/.venv/Scripts/python.exe",
-  "python.pythonPath": "d:/Projects/Multi-agent_AI_research/.venv/Scripts/python.exe"
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}",
+    "${workspaceFolder}/.venv/Lib/site-packages"
+  ],
+  "python.analysis.typeCheckingMode": "basic"
 }

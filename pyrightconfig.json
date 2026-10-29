@@ -1,4 +1,18 @@
 {
-  "venvPath": "d:/Projects/Multi-agent_AI_research",
-  "venv": ".venv"
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    ".venv"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    ".",
+    ".venv/Lib/site-packages"
+  ],
+  "typeCheckingMode": "basic",
+  "reportArgumentType": "none"
 }

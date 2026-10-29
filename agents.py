@@ -1,40 +1,57 @@
 import os
-#from langgraph.prebuilt import create_react_agent as create_agent
-from langchain.agents import create_agent
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from tools import web_search , scrape_url 
 from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
+from tools import scrape_url, web_search
 
 load_dotenv()
 
-#model setup 
+
+def _get_gemini_api_key() -> str:
+    """Retrieve Gemini API key from environment variables or Streamlit secrets, with a safe fallback."""
+    key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not key:
+        try:
+            import streamlit as st
+            key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+        except Exception:
+            pass
+    # Return placeholder if no key found to prevent import-time ValidationError
+    return key or "dummy_key_for_initialization"
+
+
+def _get_gemini_model() -> str:
+    """Allow model override via GEMINI_MODEL env var, defaulting to gemini-2.5-flash / gemini-1.5-flash."""
+    return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+
+# Global LLM instance (used by chains and agents)
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.1-flash-lite",
+    model=_get_gemini_model(),
     temperature=0,
-    google_api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    google_api_key=_get_gemini_api_key(),
 )
 
 
-#1st agent 
+# 1st agent: Search Agent
 def build_search_agent():
     return create_agent(
-        model = llm,
-        tools= [web_search]
+        model=llm,
+        tools=[web_search],
     )
 
-#2nd agent 
 
+# 2nd agent: Reader Agent
 def build_reader_agent():
     return create_agent(
-        model = llm,
-        tools = [scrape_url]
+        model=llm,
+        tools=[scrape_url],
     )
 
 
-#writer chain 
-
+# Writer chain
 writer_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an expert research writer. Write clear, structured and insightful reports."),
     ("human", """Write a detailed research report on the topic below.
@@ -55,10 +72,9 @@ Be detailed, factual and professional."""),
 
 writer_chain = writer_prompt | llm | StrOutputParser()
 
-#critic_chain 
-
+# Critic chain
 critic_prompt = ChatPromptTemplate.from_messages([
-     ("system", "You are a sharp and constructive research critic. Be honest and specific."),
+    ("system", "You are a sharp and constructive research critic. Be honest and specific."),
     ("human", """Review the research report below and evaluate it strictly.
 
 Report:
