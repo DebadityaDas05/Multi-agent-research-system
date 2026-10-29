@@ -1,5 +1,11 @@
 # ResearchMind 🔬 — Multi-Agent AI Research Assistant
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/)
+[![CI - Code Quality & Tests](https://github.com/DebadityaDas05/Multi-agent-research-system/actions/workflows/ci.yml/badge.svg)](https://github.com/DebadityaDas05/Multi-agent-research-system/actions/workflows/ci.yml)
+[![Docker Image](https://img.shields.io/badge/Docker-GHCR-blue?logo=docker)](https://github.com/DebadityaDas05/Multi-agent-research-system/pkgs/container/multi-agent-research-system)
+
+> 🌐 **Live Web App:** [https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/](https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/)
+
 ResearchMind is an advanced multi-agent research system powered by LangChain, Google Gemini, and Streamlit. It automates the process of researching any topic by orchestrating four specialized agents and chains (Search, Reader, Writer, and Critic) working in a collaborative pipeline to produce detailed, fact-checked, and critic-scored reports.
 
 ---
@@ -92,7 +98,8 @@ run.bat cli
 ---
 
 ### Option A: Web Application (Streamlit)
-Launch the interactive Streamlit dashboard:
+- **Live Cloud Deployment:** Access directly at [multi-agent-research-system.streamlit.app](https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/)
+- **Or Run Locally:**
 ```bash
 streamlit run app.py
 ```
@@ -120,36 +127,91 @@ The app will be available at `http://localhost:8501`.
 
 ## 🔄 CI/CD & Deployment
 
-### Continuous Integration (CI)
-Every pull request and push to `main` triggers [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
-- **Matrix Testing:** Validates against Python 3.10 and 3.11.
-- **Ruff:** High-speed code quality and linting checks.
-- **Pyright:** Static type verification against LangChain state interfaces.
-- **Pytest:** Deterministic unit tests for tools, scrapers, prompts, and agent builders.
-- **App Smoke Test:** Headless verification that the Streamlit application compiles and loads cleanly.
+ResearchMind features a production-ready automated CI/CD pipeline built with **GitHub Actions**, **Docker**, and **Streamlit Community Cloud**:
 
-### Continuous Deployment (CD)
-1. **GitHub Container Registry (Docker CD):**
-   - On every push to `main` or release tag (`v*`), [`.github/workflows/cd.yml`](.github/workflows/cd.yml) builds and publishes a production image to `ghcr.io/<your-username>/multi-agent-research-system:latest`.
-2. **Streamlit Community Cloud (Zero-Cost Hosting):**
-   - Connect this repository to [share.streamlit.io](https://share.streamlit.io).
-   - Set the main file path to `app.py`.
-   - Add your `GEMINI_API_KEY` and `TAVILY_API_KEY` in the Streamlit Cloud **Secrets** settings.
-   - Any push to `main` will automatically trigger a zero-downtime redeployment.
+```mermaid
+flowchart LR
+    A[Git Commit & Push] --> B{GitHub Actions}
+    B -->|CI Workflow| C[Ruff Linter]
+    C --> D[Pyright Type Check]
+    D --> E[Pytest Unit Tests]
+    E --> F[App Smoke Test]
+    B -->|CD Workflow| G[Docker Buildx]
+    G --> H[Publish to GHCR]
+    A -->|Auto-Sync| I[Streamlit Cloud]
+    I --> J([Live Web App 🚀])
+```
+
+### 🧪 Continuous Integration (CI) — [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+Runs automatically on every `push` and `pull_request` to `main`/`master`, as well as on-demand via `workflow_dispatch`:
+- **Multi-Version Matrix Testing:** Validates against Python `3.10` and `3.11`.
+- **Fast Dependency Caching:** Uses `actions/setup-python@v5` with pip cache (`cache-dependency-path: requirements.txt`) to finish runs in under 40 seconds.
+- **Mock Key Injection:** Automatically provisions dummy API keys in CI runners to validate LangChain models and Tavily clients without incurring API token costs or requiring repository secrets.
+- **Quality Gates:**
+  1. **Ruff Linter:** Fast static code analysis and import formatting.
+  2. **Pyright Type Checker:** Strict type verification against LangGraph and LangChain agent interfaces.
+  3. **Pytest Suite:** 6 automated unit tests validating HTML tag scrubbing, truncation constraints, fallback handlers, and prompt templates.
+  4. **Bytecode & App Smoke Test:** Headless compilation verifying that `app.py` loads cleanly without runtime errors.
+
+#### Run CI Suite Locally:
+```bash
+# 1. Linting
+ruff check .
+
+# 2. Type checking
+pyright app.py pipeline.py agents.py tools.py
+
+# 3. Unit tests
+pytest -v
+```
+
+---
+
+### 🚀 Continuous Deployment (CD) — [`.github/workflows/cd.yml`](.github/workflows/cd.yml)
+
+#### 1. Live Web App: Streamlit Community Cloud
+- **Live URL:** [https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/](https://multi-agent-research-system-nctoy8y79hlsxcwumfeeqp.streamlit.app/)
+- **Zero-Downtime Auto-Deploy:** Every push to `main` triggers an automatic redeployment.
+- **Managing App Secrets:** API keys can be updated at any time from **Manage app $\rightarrow$ Settings $\rightarrow$ Secrets**:
+  ```toml
+  GEMINI_API_KEY = "your_gemini_api_key"
+  TAVILY_API_KEY = "your_tavily_api_key"
+  ```
+
+#### 2. Container Registry: GitHub Packages (GHCR)
+- On every push to `main` or release tag (`v*.*.*`), the CD workflow builds a production-grade Docker image and publishes it to **GitHub Container Registry**:
+  ```bash
+  # Pull the latest published image
+  docker pull ghcr.io/debadityadas05/multi-agent-research-system:latest
+
+  # Run container with environment file
+  docker run -d -p 8501:8501 --env-file .env ghcr.io/debadityadas05/multi-agent-research-system:latest
+  ```
+- **Security & Best Practices:** Built on `python:3.11-slim`, runs as an unprivileged non-root user (`appuser`, UID 1000), includes Docker health checks (`/_stcore/health`), and utilizes GitHub Actions layer caching (`type=gha`).
 
 ---
 
 ## 📂 Project Structure
 
-- `app.py`: The entry point for the Streamlit web app, containing layout, styles, and dashboard logic.
-- `pipeline.py`: Defines `run_research_pipeline()` and acts as the CLI entry point.
-- `agents.py`: Configures the Google Gemini LLM (`gemini-3.1-flash-lite`), agents, prompts, and chains.
-- `tools.py`: Contains custom LangChain tools:
-  - `web_search`: Uses Tavily API to gather relevant information.
-  - `scrape_url`: Uses `requests` and `BeautifulSoup4` to clean and extract web pages.
-- `requirements.txt`: Project dependencies list.
-- `pyrightconfig.json`: Configuration for the Python type checker (Pyright).
-- `.env`: Environment variables container (ignored by Git).
+- `app.py`: Entry point for the Streamlit web dashboard with glassmorphism UI and real-time step visualization.
+- `pipeline.py`: Defines the CLI multi-agent orchestration pipeline.
+- `agents.py`: LLM configuration (`ChatGoogleGenerativeAI`), agent builders, prompt templates, and chains.
+- `tools.py`: LangChain tools for Tavily web search and BeautifulSoup HTML scraping.
+- `tests/`: Automated unit and smoke test suite:
+  - `test_tools.py`: Tests for HTML cleaning, 3000-char truncation, and Tavily search formatting.
+  - `test_agents.py`: Tests for prompt structures and agent tool bindings.
+  - `conftest.py`: Test fixtures and mock environment configuration.
+- `.github/workflows/`:
+  - `ci.yml`: GitHub Actions automated CI testing matrix.
+  - `cd.yml`: GitHub Actions Docker build and GHCR publishing pipeline.
+- `Dockerfile` & `docker-compose.yml`: Production containerization and service orchestration.
+- `.dockerignore`: Excludes virtual environments, secrets, and caches from Docker builds.
+- `.streamlit/config.toml`: Production Streamlit server, headless mode, theme, and security settings.
+- `pyproject.toml`: Tool configuration for Ruff linter and Pytest.
+- `pyrightconfig.json`: Configuration for Pyright / Pylance type checking.
+- `run.bat` & `start.bat`: One-click Windows startup scripts.
+- `requirements.txt`: Python package dependencies.
+- `.env`: Local environment variables (ignored by Git).
 
 ---
 
